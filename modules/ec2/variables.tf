@@ -5,3 +5,6 @@ variable "sg_id" {}
 variable "key_name" {}
 variable "app_port" {}
 variable "ec2_name" {}
+
+
+# this is variables file for ec2 module
