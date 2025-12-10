@@ -76,6 +76,11 @@ jobs:
         with:
           name: tfplan
           path: tfplan
+      - name: Upload lock file
+        uses: actions/upload-artifact@v4
+        with:
+          name: tf-lock
+          path: .terraform.lock.hcl
 # apply teerraform code 
 # Hello from scratch 
   apply:
