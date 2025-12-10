@@ -80,7 +80,6 @@ jobs:
   apply:
     name: Apply (manual)
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
     needs: plan
     steps:
       - uses: actions/checkout@v4
