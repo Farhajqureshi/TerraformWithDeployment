@@ -32,3 +32,6 @@ EOF
     Name = var.ec2_name
   }
 }
+
+
+# output is created a instance is successfully created with public ip address
