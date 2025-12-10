@@ -7,4 +7,4 @@ variable "app_port" {}
 variable "ec2_name" {}
 
 
-# this is variables file for ec2 instance
+# this is variables file for ec2 instance rinning now
