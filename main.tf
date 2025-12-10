@@ -9,6 +9,8 @@ module "sg" {
   app_port = var.app_port
 }
 
+# this is the ec2 terraform moule call 
+
 module "ec2" {
   source         = "./modules/ec2"
   ami            = var.ami
