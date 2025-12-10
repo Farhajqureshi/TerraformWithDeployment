@@ -59,14 +59,12 @@ jobs:
           key_name = "${{ secrets.TF_KEY_NAME }}"
           app_port = "${{ secrets.TF_APP_PORT }}"
           EOF
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Terraform Init
         run: terraform init -input=false
       - name: Terraform Plan
@@ -81,6 +79,7 @@ jobs:
         with:
           name: tf-lock
           path: .terraform.lock.hcl
+
   apply:
     name: Apply (manual)
     runs-on: ubuntu-latest
@@ -95,9 +94,17 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+      - name: Download lock file
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-lock
+          path: .
+      - name: Terraform Init
+        run: terraform init -input=false
       - name: Download tfplan
         uses: actions/download-artifact@v4
         with:
           name: tfplan
+          path: .
       - name: Terraform Apply
         run: terraform apply -input=false -auto-approve tfplan
