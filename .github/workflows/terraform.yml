@@ -13,16 +13,22 @@ on:
       - '**/*.tfvars'
   workflow_dispatch: {}
 
+env:
+  TERRAFORM_VERSION: '1.5.7'
+
 jobs:
   fmt-validate:
     name: Format & Validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: '1.5.7'
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
       - name: Create terraform.tfvars from secrets
         run: |
           cat > terraform.tfvars <<EOF
@@ -34,8 +40,13 @@ jobs:
           key_name = "${{ secrets.TF_KEY_NAME }}"
           app_port = "${{ secrets.TF_APP_PORT }}"
           EOF
+
       - name: Terraform Init
         run: terraform init -input=false
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
       - name: Terraform Validate
         run: terraform validate
 
@@ -45,9 +56,14 @@ jobs:
     needs: fmt-validate
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
       - name: Create terraform.tfvars from secrets
         run: |
           cat > terraform.tfvars <<EOF
@@ -66,40 +82,69 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      
+
       - name: Terraform Init
         run: terraform init -input=false
-      - name: Terraform Plan
+
+      - name: Terraform Plan (save plan to file)
         run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Show short plan summary
+        run: terraform show -no-color -json tfplan | jq -r '.resource_changes | length as $n | "Resources to change: \($n)"' || true
+
       - name: Upload tfplan
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
           path: tfplan
-      - name: Upload lock file
+
+      - name: Upload terraform lock file
         uses: actions/upload-artifact@v4
         with:
           name: tf-lock
           path: .terraform.lock.hcl
-# apply teerraform code 
-# Hello from scratch 
+
   apply:
     name: Apply (manual)
     runs-on: ubuntu-latest
     needs: plan
+    # you can protect this job by an environment with required reviewers in repo settings
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Download tfplan
         uses: actions/download-artifact@v4
         with:
           name: tfplan
-      - name: Terraform Apply
+          path: .
+
+      - name: Download terraform lock file
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-lock
+          path: .
+
+      - name: List workspace files (debug)
+        run: ls -la
+
+      - name: Ensure lockfile present (debug)
+        run: test -f .terraform.lock.hcl && echo "lockfile present" || (echo ".terraform.lock.hcl missing" && exit 1)
+
+      - name: Terraform Init (ensures same provider versions from lockfile)
+        run: terraform init -input=false
+
+      - name: Terraform Apply using saved plan
         run: terraform apply -input=false -auto-approve tfplan
