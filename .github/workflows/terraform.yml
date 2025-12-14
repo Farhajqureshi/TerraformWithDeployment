@@ -75,11 +75,7 @@ jobs:
         with:
           name: tfplan
           path: tfplan
-      - name: Upload lock file
-        uses: actions/upload-artifact@v4
-        with:
-          name: tf-lock
-          path: .terraform.lock.hcl
+      # No longer uploading .terraform.lock.hcl - init will run in apply
 
   apply:
     name: Apply (automatic on main)
@@ -96,11 +92,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - name: Download lock file
-        uses: actions/download-artifact@v4
-        with:
-          name: tf-lock
-          path: .
+      # No longer downloading .terraform.lock.hcl (apply runs terraform init)
       - name: Terraform Init
         run: terraform init -input=false
       - name: Download tfplan
