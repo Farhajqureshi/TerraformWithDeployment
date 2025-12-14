@@ -3,4 +3,4 @@ output "public_ip" {
 }
 
 
-# this is output file for ec2 instance running now new
+# this is output file for ec2 instance running now
