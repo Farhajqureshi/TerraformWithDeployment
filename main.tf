@@ -9,7 +9,7 @@ module "sg" {
   app_port = var.app_port
 }
 
-# this is the ec2 terraform moule call 
+# this is the ec2 terraform moule call hello
 
 module "ec2" {
   source         = "./modules/ec2"
